@@ -1,12 +1,10 @@
 
 (ns bullet-screen.comp.container
   (:require [hsl.core :refer [hsl]]
-            [respo.alias :refer [create-comp div]]))
+            [respo.alias :refer [create-comp div span]]))
 
-(defn render [] (fn [state mutate!] (div {})))
+(defn render []
+  (fn [state mutate!]
+    (div {} (span {:attrs {:inner-text "Container"}}))))
 
 (def comp-container (create-comp :container render))
-
-(defonce store-ref (atom {}))
-
-(defonce states-ref (atom {}))
