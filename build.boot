@@ -4,14 +4,15 @@
                  [org.clojure/clojure       "1.8.0"       :scope "test"]
                  [adzerk/boot-cljs          "1.7.228-1"   :scope "test"]
                  [adzerk/boot-reload        "0.4.11"      :scope "test"]
-                 [cirru/stack-server        "0.1.5"       :scope "test"]
+                 [cirru/stack-server        "0.1.6"       :scope "test"]
                  [adzerk/boot-test          "1.1.2"       :scope "test"]
                  [mvc-works/hsl             "0.1.2"]
+                 [respo/ui                  "0.1.1"]
                  [respo                     "0.3.9"]])
 
 (require '[adzerk.boot-cljs   :refer [cljs]]
          '[adzerk.boot-reload :refer [reload]]
-         '[stack-server.core  :refer [start-stack-editor!]]
+         '[stack-server.core  :refer [start-stack-editor! transform-stack]]
          '[respo.alias        :refer [html head title script style meta' div link body]]
          '[respo.render.static-html :refer [make-html]]
          '[adzerk.boot-test   :refer :all]
@@ -26,11 +27,6 @@
        :url         "https://github.com/TopixIM/bullet-screen"
        :scm         {:url "https://github.com/TopixIM/bullet-screen"}
        :license     {"MIT" "http://opensource.org/licenses/mit-license.php"}})
-
-(deftask compile-cirru []
-  (comp
-    (start-stack-editor!)
-    (target :dir #{"src/"})))
 
 (defn use-text [x] {:attrs {:innerHTML x}})
 (defn html-dsl [data fileset]
@@ -62,31 +58,29 @@
         (add-resource tmp)
         (commit!)))))
 
-(deftask dev []
+(deftask dev! []
   (set-env!
-    :source-paths #{"src/"})
+    :asset-paths #{"assets"})
   (comp
     (watch)
+    (start-stack-editor!)
+    (target :dir #{"src/"})
     (html-file :data {:build? false})
     (reload :on-jsload 'bullet-screen.core/on-jsload
             :cljs-asset-path ".")
     (cljs)
     (target)))
 
-(deftask build-simple []
-  (set-env!
-    :asset-paths #{"assets"}
-    :source-paths #{"src/"})
+(deftask generate-code []
   (comp
-    (cljs :optimizations :simple)
-    (html-file :data {:build? false})
-    (target)))
+    (transform-stack :filename "stack-sepal.ir")
+    (target :dir #{"src/"})))
 
 (deftask build-advanced []
   (set-env!
-    :asset-paths #{"assets"}
-    :source-paths #{"src/"})
+    :asset-paths #{"assets"})
   (comp
+    (transform-stack :filename "stack-sepal.ir")
     (cljs :optimizations :advanced)
     (html-file :data {:build? true})
     (target)))
@@ -95,11 +89,6 @@
   (with-pre-wrap fileset
     (sh "rsync" "-r" "target/" "tiye:repo/topixim/bullet-screen" "--exclude" "main.out" "--delete")
     fileset))
-
-(deftask send-tiye []
-  (comp
-    (build-simple)
-    (rsync)))
 
 (deftask build []
   (comp
@@ -120,4 +109,4 @@
     :source-paths #{"src" "test"})
   (comp
     (watch)
-    (test :namespaces '#{stack-workflow.test})))
+    (test :namespaces '#{bullet-screen.test})))
